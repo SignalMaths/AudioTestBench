@@ -10,5 +10,10 @@ dependency:
 1: sounddevice
 2: kt GUI
 
+
+compile
+gcc a.c b.c -fPIC -shared -o test.so
+
+
 Usage
 1: python rec_gui.py
