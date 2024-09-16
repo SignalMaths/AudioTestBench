@@ -22,6 +22,11 @@ from tkinter.simpledialog import Dialog
 import numpy as np
 import sounddevice as sd
 import soundfile as sf
+from AlgoProcess import AlgoProcess
+import ctypes
+from ctypes import c_float 
+
+
 
 
 def file_writing_thread(*, q, **soundfile_args):
@@ -78,13 +83,15 @@ class RecGui(tk.Tk):
     stream = None
     sd.default.samplerate = 48000
     # the sample total number
-    sd.default.blocksize= 48*20
-
+    sd.default.blocksize= 1024
+  
     def __init__(self):
         super().__init__()
+        #self.AlgoInst = AlgoProcess()
+        self.instance = AlgoProcess()
+        #self.instance.func_init()
 
         self.title('SoundSimulation')
-        
         self.geometry('400x300') 
         
         # Frame from configuartion 
@@ -120,8 +127,11 @@ class RecGui(tk.Tk):
         self.create_stream()
         self.recording = self.previously_recording = False
         self.audio_q = queue.Queue()
+        self.audio_temp = queue.Queue()
         self.peak = 0
         self.metering_q = queue.Queue(maxsize=1)
+
+        self.angle =0
 
         self.protocol('WM_DELETE_WINDOW', self.close_window)
         self.init_buttons()
@@ -142,14 +152,18 @@ class RecGui(tk.Tk):
             # NB: This increment operation is not atomic, but this doesn't
             #     matter since no other thread is writing to the attribute.
             self.input_overflows += 1
-        # NB: self.recording is accessed from different threads.
-        #     This is safe because here we are only accessing it once (with a
-        #     single bytecode instruction).
+        # NB: self.recording is accessed fro
         if self.recording:
             self.audio_q.put(indata.copy())
-            #print(indata.size)
-            #print('processing')
-            # call the thread of audio process... May be from a c project.
+            c_float_array = indata.astype(np.ctypeslib.as_ctypes_type(c_float))
+            # convert the pthon float shape to the Ctype format.
+            for i in range(self.stream.blocksize):
+                for j in range(self.stream.channels):
+                    self.instance.dataIn[i*self.stream.channels+j] = c_float_array[i,j]
+            # Algorithm process
+            self.instance.process()
+            # return value
+            self.angle = float(self.instance.dataOut[0])
             self.previously_recording = True
         else:
             if self.previously_recording:
