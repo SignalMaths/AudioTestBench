@@ -12,6 +12,10 @@ from AlgoProcess import AlgoProcess
 
 print("main")
 
+for i in range(10):
+    for j in range(5):
+        print(i,j)
+
 class B:
     def __init__(self):
         self.instance = AlgoProcess()

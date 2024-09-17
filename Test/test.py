@@ -22,7 +22,10 @@ from ctypes import *
 
 
 so = ctypes.CDLL(r'E:\Project\PythonAudio\Test\test.so') # so文件路径
-
+for i in range(10):
+    for j in range(5):
+        print(i,j)
+        
 so.funcTest.argtypes = [c_int*22]
 so.funcTest.restype = None
 IntArray10 = c_int*22

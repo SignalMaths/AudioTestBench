@@ -86,12 +86,14 @@ class RecGui(tk.Tk):
 
     def on_settings(self, *args):
         w = SettingsWindow(self, 'Settings')
+        self.device = w.result
         if w.result is not None:
             self.create_stream(device=w.result)
+        self.update_gui()
   
     def __init__(self):
         super().__init__()
-
+        self.device=0
         self.instance = AlgoProcess()
         self.title('SoundSimulation')
         self.geometry('1000x500') 
@@ -102,8 +104,8 @@ class RecGui(tk.Tk):
         menubar.add_cascade(label='Setting',menu=menu2)
         menu2.add_command(label='Source/Device',command=self.on_settings)
         menu2.add_command(label='Format')
-        self.Info ='Info'
-        self.Info_label = ttk.Label(text='Recording device\tSample Rate:48000\tChannel No.:16', font=('Arial', 10),justify="left" )
+        self.Info ='NONE'
+        self.Info_label = ttk.Label(text=self.Info, font=('Arial', 10),justify="left" )
         self.Info_label.pack(anchor='nw')
 
         # Frame for simualation status
@@ -141,11 +143,16 @@ class RecGui(tk.Tk):
         self.init_buttons()
         self.update_gui()
 
-    def create_stream(self, device=None):
+    def create_stream(self, device=None,):
         if self.stream is not None:
             self.stream.close()
+        chan = 2
+        if 'USB' in sd.query_devices(self.device)['name']:
+            chan = min(16,sd.query_devices(device)['max_input_channels'])
+        else:
+            chan = 2
         self.stream = sd.InputStream(
-            device=device, channels=16, callback=self.audio_callback)
+            device=device, channels=chan, callback=self.audio_callback)
         self.stream.start()
 
         # start the algorithm initialization
@@ -161,9 +168,9 @@ class RecGui(tk.Tk):
             self.audio_q.put(indata.copy())
             c_float_array = indata.astype(np.ctypeslib.as_ctypes_type(c_float))
             # convert the pthon float shape to the Ctype format.
-            for i in range(self.stream.blocksize):
-                for j in range(self.stream.channels):
-                    self.instance.dataIn[i*self.stream.channels+j] = c_float_array[i,j]
+            for j in range(self.stream.channels):
+                for i in range(self.stream.blocksize):
+                    self.instance.dataIn[j*self.stream.blocksize + i] = c_float_array[i,j]
             # Algorithm process
             self.instance.process()
             # return value
@@ -232,8 +239,8 @@ class RecGui(tk.Tk):
 
     def update_gui(self):
         
-        content = 'Source device:'+str(self.stream.device)+'\tSampleRate:'+str(self.stream.samplerate)+'\tChannel NO.:'+str(self.stream.channels)
-        self.Info_label['text'] = content
+        self.Info = 'Source device:'+sd.query_devices(self.device)['name']+'\tSampleRate:'+str(self.stream.samplerate)+'\tChannel Number.:'+str(self.stream.channels)
+        self.Info_label['text'] = self.Info
 
         self.status_label['text'] = 'input overflows: {}'.format(
             self.input_overflows)
@@ -244,7 +251,7 @@ class RecGui(tk.Tk):
         else:
             self.meter['value'] = peak
 
-        content = 'Angle:'+str(round(self.angle/3.1415926*9)*20)
+        content = 'Angle:'+str(round(self.angle/3.1415926*18)*10)
         self.angle_label['text'] = content
 
         self.after(100, self.update_gui)
