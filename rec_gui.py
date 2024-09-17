@@ -18,6 +18,7 @@ import threading
 import tkinter as tk
 from tkinter import ttk
 from tkinter.simpledialog import Dialog
+from tkinter import *
 
 import numpy as np
 import sounddevice as sd
@@ -26,6 +27,7 @@ from AlgoProcess import AlgoProcess
 import ctypes
 from ctypes import c_float 
 
+from datetime import datetime
 
 
 
@@ -77,35 +79,35 @@ class SettingsWindow(Dialog):
         self.result = self.device_ids[self.device_list.current()]
         return True
 
-
 class RecGui(tk.Tk):
-    print('Recgui')
     stream = None
     sd.default.samplerate = 48000
-    # the sample total number
     sd.default.blocksize= 1024
+
+    def on_settings(self, *args):
+        w = SettingsWindow(self, 'Settings')
+        if w.result is not None:
+            self.create_stream(device=w.result)
   
     def __init__(self):
         super().__init__()
-        #self.AlgoInst = AlgoProcess()
-        self.instance = AlgoProcess()
-        #self.instance.func_init()
 
+        self.instance = AlgoProcess()
         self.title('SoundSimulation')
-        self.geometry('400x300') 
+        self.geometry('1000x500') 
         
-        # Frame from configuartion 
-        f1 = ttk.Frame(height=100,width=500).pack()
-        ttk.Label(f1, text='Select device:', font=('Arial', 10), ).place(x=10, y=20, anchor='nw')
-        self.settings_button = ttk.Button(f1, text='settings', command=self.on_settings)
-        #self.settings_button.pack(anchor='w')
-        self.settings_button.place(x=150, y=20, anchor='nw')
-        # Audio Format selction
-        tk.Label(f1, text='Audio Format:', font=('Arial', 10), ).place(x=10, y=50, anchor='nw')
+        menubar = Menu(self)
+        self.config(menu=menubar)        
+        menu2=Menu(menubar,tearoff=False)
+        menubar.add_cascade(label='Setting',menu=menu2)
+        menu2.add_command(label='Source/Device',command=self.on_settings)
+        menu2.add_command(label='Format')
+        self.Info ='Info'
+        self.Info_label = ttk.Label(text='Recording device\tSample Rate:48000\tChannel No.:16', font=('Arial', 10),justify="left" )
+        self.Info_label.pack(anchor='nw')
 
         # Frame for simualation status
-        f = ttk.Frame(height=100,width=500).pack()
-        padding = 20
+        f = ttk.Frame().pack()
         self.rec_button = ttk.Button(f)
         self.rec_button.pack(anchor='w')
 
@@ -115,6 +117,10 @@ class RecGui(tk.Tk):
         self.input_overflows = 0
         self.status_label = ttk.Label()
         self.status_label.pack(anchor='w')
+
+        self.angle = 0
+        self.angle_label = ttk.Label(text = 'Angle:')
+        self.angle_label.pack(anchor='w')
 
         self.meter = ttk.Progressbar()
         self.meter['orient'] = 'horizontal'
@@ -130,8 +136,6 @@ class RecGui(tk.Tk):
         self.audio_temp = queue.Queue()
         self.peak = 0
         self.metering_q = queue.Queue(maxsize=1)
-
-        self.angle =0
 
         self.protocol('WM_DELETE_WINDOW', self.close_window)
         self.init_buttons()
@@ -164,6 +168,8 @@ class RecGui(tk.Tk):
             self.instance.process()
             # return value
             self.angle = float(self.instance.dataOut[0])
+            #self.angle =(self.angle/3.1415926*9)*20
+            #print(self.angle)
             self.previously_recording = True
         else:
             if self.previously_recording:
@@ -179,12 +185,8 @@ class RecGui(tk.Tk):
             self.peak = 0
 
     def on_rec(self):
-        self.settings_button['state'] = 'disabled'
         self.recording = True
-
-        filename = tempfile.mktemp(
-            prefix='delme_rec_gui_', suffix='.wav', dir='')
-
+        filename = 'Sim_'+datetime.now().strftime('%Y_%m_%d_%H_%M_%S')+'.wav'
         if self.audio_q.qsize() != 0:
             print('WARNING: Queue not empty!')
         self.thread = threading.Thread(
@@ -200,11 +202,10 @@ class RecGui(tk.Tk):
         self.thread.start()
 
         # NB: File creation might fail!  For brevity, we don't check for this.
-
         self.rec_button['text'] = 'stop'
         self.rec_button['command'] = self.on_stop
         self.rec_button['state'] = 'normal'
-        self.file_label['text'] = filename
+        self.file_label['text'] = 'Recording filename:'+filename
 
     def on_stop(self, *args):
         self.rec_button['state'] = 'disabled'
@@ -222,19 +223,18 @@ class RecGui(tk.Tk):
         self.thread.join()
         self.init_buttons()
 
-    def on_settings(self, *args):
-        w = SettingsWindow(self, 'Settings')
-        if w.result is not None:
-            self.create_stream(device=w.result)
 
     def init_buttons(self):
         self.rec_button['text'] = 'Simulation'
         self.rec_button['command'] = self.on_rec
         if self.stream:
             self.rec_button['state'] = 'normal'
-        self.settings_button['state'] = 'normal'
 
     def update_gui(self):
+        
+        content = 'Source device:'+str(self.stream.device)+'\tSampleRate:'+str(self.stream.samplerate)+'\tChannel NO.:'+str(self.stream.channels)
+        self.Info_label['text'] = content
+
         self.status_label['text'] = 'input overflows: {}'.format(
             self.input_overflows)
         try:
@@ -243,6 +243,10 @@ class RecGui(tk.Tk):
             pass
         else:
             self.meter['value'] = peak
+
+        content = 'Angle:'+str(round(self.angle/3.1415926*9)*20)
+        self.angle_label['text'] = content
+
         self.after(100, self.update_gui)
 
     def close_window(self):
@@ -252,7 +256,6 @@ class RecGui(tk.Tk):
 
 
 def main():
-    print('main')
     app = RecGui()
     app.mainloop()
 

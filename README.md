@@ -6,13 +6,13 @@ Test
     the example python call C standard function
 
 
-dependency:
+Environment dependency:
 1: sounddevice
 2: kt GUI
 
-
-compile
-gcc a.c b.c -fPIC -shared -o test.so
+Rsoureces
+1: Mylib.so
+2: main_mic.apu
 
 
 Usage

@@ -30,16 +30,17 @@ class AlgoProcess:
         status =0
         func_init=0
         Vc_ptr=0
-        AudioLib = ctypes.CDLL(os.getcwd()+'\mylib.so') # default path
+        path = os.getcwd()
+        parafile = path+r'\resources\main_mic.apu'
+        AudioLib = ctypes.CDLL(path+r'\resources\mylib.so') # default path
         # init the para data and the init function
         # define the input type of the function
-        AudioLib.Lib_Init.argtypes = [c_void_p]
+        AudioLib.Lib_Init.argtypes = [c_void_p,c_char_p]
         # define the return type of the function
         AudioLib.Lib_Init.restype = ctypes.c_void_p        
         para = c_void_p(None)
         self.func_init= AudioLib.Lib_Init
-        self.Vc_ptr=self.func_init(byref(para))
-        print("func_init finished")
+        self.Vc_ptr=self.func_init(byref(para),c_char_p(parafile.encode('utf-8')))
 
         # init the data and the process function
         AudioLib.Lib_Process.argtypes = [c_void_p,c_void_p,c_void_p]
