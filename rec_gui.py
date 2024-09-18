@@ -12,8 +12,6 @@ recording can be stopped successfully when it is supposed to.
 """
 import contextlib
 import queue
-import sys
-import tempfile
 import threading
 import tkinter as tk
 from tkinter import ttk
@@ -24,7 +22,6 @@ import numpy as np
 import sounddevice as sd
 import soundfile as sf
 from AlgoProcess import AlgoProcess
-import ctypes
 from ctypes import c_float 
 
 from datetime import datetime
@@ -116,10 +113,6 @@ class RecGui(tk.Tk):
         self.file_label = ttk.Label(text='<file name>')
         self.file_label.pack(anchor='w')
 
-        self.input_overflows = 0
-        self.status_label = ttk.Label()
-        self.status_label.pack(anchor='w')
-
         self.angle = 0
         self.angle_label = ttk.Label(text = 'Angle:')
         self.angle_label.pack(anchor='w')
@@ -155,28 +148,16 @@ class RecGui(tk.Tk):
             device=device, channels=chan, callback=self.audio_callback)
         self.stream.start()
 
-        # start the algorithm initialization
-
     def audio_callback(self, indata, frames, time, status):
         """This is called (from a separate thread) for each audio block."""
-        if status.input_overflow:
-            # NB: This increment operation is not atomic, but this doesn't
-            #     matter since no other thread is writing to the attribute.
-            self.input_overflows += 1
-        # NB: self.recording is accessed fro
         if self.recording:
             self.audio_q.put(indata.copy())
             c_float_array = indata.astype(np.ctypeslib.as_ctypes_type(c_float))
-            # convert the pthon float shape to the Ctype format.
             for j in range(self.stream.channels):
                 for i in range(self.stream.blocksize):
                     self.instance.dataIn[j*self.stream.blocksize + i] = c_float_array[i,j]
-            # Algorithm process
             self.instance.process()
-            # return value
             self.angle = float(self.instance.dataOut[0])
-            #self.angle =(self.angle/3.1415926*9)*20
-            #print(self.angle)
             self.previously_recording = True
         else:
             if self.previously_recording:
@@ -207,7 +188,6 @@ class RecGui(tk.Tk):
             ),
         )
         self.thread.start()
-
         # NB: File creation might fail!  For brevity, we don't check for this.
         self.rec_button['text'] = 'stop'
         self.rec_button['command'] = self.on_stop
@@ -230,7 +210,6 @@ class RecGui(tk.Tk):
         self.thread.join()
         self.init_buttons()
 
-
     def init_buttons(self):
         self.rec_button['text'] = 'Simulation'
         self.rec_button['command'] = self.on_rec
@@ -238,20 +217,15 @@ class RecGui(tk.Tk):
             self.rec_button['state'] = 'normal'
 
     def update_gui(self):
-        
         self.Info = 'Source device:'+sd.query_devices(self.device)['name']+'\tSampleRate:'+str(self.stream.samplerate)+'\tChannel Number.:'+str(self.stream.channels)
         self.Info_label['text'] = self.Info
-
-        self.status_label['text'] = 'input overflows: {}'.format(
-            self.input_overflows)
         try:
             peak = self.metering_q.get_nowait()
         except queue.Empty:
             pass
         else:
             self.meter['value'] = peak
-
-        content = 'Angle:'+str(round(self.angle/3.1415926*18)*10)
+        content = 'DOA(Direction Of Arrival) Angle:'+str(round(self.angle/3.1415926*18)*10)
         self.angle_label['text'] = content
 
         self.after(100, self.update_gui)
@@ -261,11 +235,9 @@ class RecGui(tk.Tk):
             self.on_stop()
         self.destroy()
 
-
 def main():
     app = RecGui()
     app.mainloop()
-
 
 if __name__ == '__main__':
     main()
