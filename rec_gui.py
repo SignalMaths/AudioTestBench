@@ -25,7 +25,7 @@ from AlgoProcess import AlgoProcess
 from ctypes import c_float 
 
 from datetime import datetime
-
+from Led import LED
 
 
 def file_writing_thread(*, q, **soundfile_args):
@@ -90,8 +90,10 @@ class RecGui(tk.Tk):
   
     def __init__(self):
         super().__init__()
+        
         self.device=0
         self.instance = AlgoProcess()
+        self.LedOBJ = LED()
         self.title('SoundSimulation')
         self.geometry('1000x500') 
         
@@ -227,6 +229,7 @@ class RecGui(tk.Tk):
             self.meter['value'] = peak
         content = 'DOA(Direction Of Arrival) Angle:'+str(round(self.angle/3.1415926*18)*10)
         self.angle_label['text'] = content
+        self.LedOBJ.LED_Control(int(self.angle/3.1415926*16))
 
         self.after(100, self.update_gui)
 
@@ -236,6 +239,7 @@ class RecGui(tk.Tk):
         self.destroy()
 
 def main():
+    
     app = RecGui()
     app.mainloop()
 
