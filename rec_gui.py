@@ -152,13 +152,13 @@ class RecGui(tk.Tk):
         """This is called (from a separate thread) for each audio block."""
         if self.recording:
             self.audio_q.put(indata.copy())
+            self.previously_recording = True
             c_float_array = indata.astype(np.ctypeslib.as_ctypes_type(c_float))
             for j in range(self.stream.channels):
                 for i in range(self.stream.blocksize):
                     self.instance.dataIn[j*self.stream.blocksize + i] = c_float_array[i,j]
             self.instance.process()
             self.angle = float(self.instance.dataOut[0])
-            self.previously_recording = True
         else:
             if self.previously_recording:
                 self.audio_q.put(None)
