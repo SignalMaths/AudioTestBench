@@ -14,31 +14,16 @@ import queue
 import threading
 import tkinter as tk
 from tkinter import ttk
-from tkinter.simpledialog import Dialog
 from tkinter import *
-
 import numpy as np
 import sounddevice as sd
-import soundfile as sf
-from AlgoProcess import AlgoProcess
 from ctypes import c_float 
-
 from datetime import datetime
+
+from AlgoProcess import AlgoProcess
+from FileThread import FileWriting
 from Led import LED
 import MenuWindow
-
-
-def file_writing_thread(*, q, **soundfile_args):
-    """Write data from queue to file until *None* is received."""
-    # NB: If you want fine-grained control about the buffering of the file, you
-    #     can use Python's open() function (with the "buffering" argument) and
-    #     pass the resulting file object to sf.SoundFile().
-    with sf.SoundFile(**soundfile_args) as f:
-        while True:
-            data = q.get()
-            if data is None:
-                break
-            f.write(data)
 
 class RecGui(tk.Tk):
     stream = None
@@ -47,10 +32,11 @@ class RecGui(tk.Tk):
 
     def on_settings(self, *args):
         w = MenuWindow.SettingsWindow(self, 'Settings')
-        self.device = w.result
-        self.update_gui()
-        if w.result is not None:
+        if(w.result!=None):
+            self.device =w.result
             self.create_stream(device=w.result)
+        self.update_gui()
+
     def output_settings(self, *args):
         w = MenuWindow.OutSettingsWindow(self, 'Settings')
 
@@ -59,7 +45,6 @@ class RecGui(tk.Tk):
         self.update_gui()
         #if w.result is not None:
         #    self.create_stream(device=w.result)
-
   
     def __init__(self):
         super().__init__()
@@ -85,10 +70,6 @@ class RecGui(tk.Tk):
         self.Info ='NONE'
         self.Info_label = ttk.Label(text=self.Info, font=('Arial', 10),justify="left" )
         self.Info_label.pack(side=tk.BOTTOM,anchor='nw')
-
-        #self.OutInfo ='NONE'
-        #self.OutInfo_label = ttk.Label(text=self.OutInfo, font=('Arial', 10),justify="left" )
-        #self.OutInfo_label.pack(anchor='nw')
 
         # Frame for simualation status
         f = ttk.Frame().pack()
@@ -129,6 +110,7 @@ class RecGui(tk.Tk):
             chan = min(16,sd.query_devices(device)['max_input_channels'])
         else:
             chan = 2
+        chan = 2
         self.stream = sd.InputStream(
             device=device, channels=chan, callback=self.audio_callback)
         self.stream.start()
@@ -163,7 +145,7 @@ class RecGui(tk.Tk):
         if self.audio_q.qsize() != 0:
             print('WARNING: Queue not empty!')
         self.thread = threading.Thread(
-            target=file_writing_thread,
+            target=FileWriting.file_writing_thread,
             kwargs=dict(
                 file=filename,
                 mode='x',
@@ -185,7 +167,6 @@ class RecGui(tk.Tk):
         self.wait_for_thread()
 
     def wait_for_thread(self):
-        # NB: Waiting time could be calculated based on stream.latency
         self.after(10, self._wait_for_thread)
 
     def _wait_for_thread(self):
@@ -202,8 +183,6 @@ class RecGui(tk.Tk):
             self.rec_button['state'] = 'normal'
 
     def update_gui(self):
-        #print(self.device)
-        #if(self.device)
         self.Info = 'Source device:\n'+sd.query_devices(self.device)['name']+'\tSampleRate:'+str(self.stream.samplerate)+'\tChannel Number.:'+str(self.stream.channels)
         self.Info_label['text'] = self.Info
         try:
@@ -215,8 +194,7 @@ class RecGui(tk.Tk):
         content = 'DOA(Direction Of Arrival) Angle:'+str(round(self.angle/3.1415926*18)*10)
         self.angle_label['text'] = content
         self.LedOBJ.LED_Control(int(self.angle/3.1415926*16))
-
-        self.after(100, self.update_gui)
+        self.after(500, self.update_gui)
 
     def close_window(self):
         if self.recording:
