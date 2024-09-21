@@ -53,7 +53,9 @@ class RecGui(tk.Tk):
             self.create_stream(device=w.result)
     def output_settings(self, *args):
         w = MenuWindow.OutSettingsWindow(self, 'Settings')
-        self.device = w.result
+
+        if(w.result!=None):
+            self.device =w.result
         self.update_gui()
         #if w.result is not None:
         #    self.create_stream(device=w.result)
@@ -200,7 +202,8 @@ class RecGui(tk.Tk):
             self.rec_button['state'] = 'normal'
 
     def update_gui(self):
-        print(self.device)
+        #print(self.device)
+        #if(self.device)
         self.Info = 'Source device:\n'+sd.query_devices(self.device)['name']+'\tSampleRate:'+str(self.stream.samplerate)+'\tChannel Number.:'+str(self.stream.channels)
         self.Info_label['text'] = self.Info
         try:
