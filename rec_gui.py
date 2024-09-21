@@ -10,7 +10,6 @@ Blocking the file-writing thread for some time is no problem, as long as the
 recording can be stopped successfully when it is supposed to.
 
 """
-import contextlib
 import queue
 import threading
 import tkinter as tk
@@ -26,6 +25,7 @@ from ctypes import c_float
 
 from datetime import datetime
 from Led import LED
+import MenuWindow
 
 
 def file_writing_thread(*, q, **soundfile_args):
@@ -40,53 +40,24 @@ def file_writing_thread(*, q, **soundfile_args):
                 break
             f.write(data)
 
-
-class SettingsWindow(Dialog):
-    """Dialog window for choosing sound device."""
-
-    def body(self, master):
-        ttk.Label(master, text='Select host API:').pack(anchor='w')
-        self.hostapi_list = ttk.Combobox(master, state='readonly', width=50)
-        self.hostapi_list.pack()
-        self.hostapi_list['values'] = [
-            hostapi['name'] for hostapi in sd.query_hostapis()]
-        # select sound device
-        ttk.Label(master, text='Select sound device:').pack(anchor='w')
-        self.device_ids = []
-        self.device_list = ttk.Combobox(master, state='readonly', width=50)
-        self.device_list.pack()
-        self.hostapi_list.bind('<<ComboboxSelected>>', self.update_device_list)
-        with contextlib.suppress(sd.PortAudioError):
-            self.hostapi_list.current(sd.default.hostapi)
-            self.hostapi_list.event_generate('<<ComboboxSelected>>')
-
-    def update_device_list(self, *args):
-        hostapi = sd.query_hostapis(self.hostapi_list.current())
-        self.device_ids = [
-            idx
-            for idx in hostapi['devices']
-            if sd.query_devices(idx)['max_input_channels'] > 0]
-        self.device_list['values'] = [
-            sd.query_devices(idx)['name'] for idx in self.device_ids]
-        default = hostapi['default_input_device']
-        if default >= 0:
-            self.device_list.current(self.device_ids.index(default))
-
-    def validate(self):
-        self.result = self.device_ids[self.device_list.current()]
-        return True
-
 class RecGui(tk.Tk):
     stream = None
     sd.default.samplerate = 48000
     sd.default.blocksize= 1024
 
     def on_settings(self, *args):
-        w = SettingsWindow(self, 'Settings')
+        w = MenuWindow.SettingsWindow(self, 'Settings')
         self.device = w.result
+        self.update_gui()
         if w.result is not None:
             self.create_stream(device=w.result)
+    def output_settings(self, *args):
+        w = MenuWindow.OutSettingsWindow(self, 'Settings')
+        self.device = w.result
         self.update_gui()
+        #if w.result is not None:
+        #    self.create_stream(device=w.result)
+
   
     def __init__(self):
         super().__init__()
@@ -99,13 +70,23 @@ class RecGui(tk.Tk):
         
         menubar = Menu(self)
         self.config(menu=menubar)        
+        menu1=Menu(menubar,tearoff=False)
+        menubar.add_cascade(label='Input Setting',menu=menu1)
+        menu1.add_command(label='Source/Device',command=self.on_settings)
+        menu1.add_command(label='Format')
+
         menu2=Menu(menubar,tearoff=False)
-        menubar.add_cascade(label='Setting',menu=menu2)
-        menu2.add_command(label='Source/Device',command=self.on_settings)
+        menubar.add_cascade(label='Output Setting',menu=menu2)
+        menu2.add_command(label='Source/Device',command=self.output_settings)
         menu2.add_command(label='Format')
+
         self.Info ='NONE'
         self.Info_label = ttk.Label(text=self.Info, font=('Arial', 10),justify="left" )
-        self.Info_label.pack(anchor='nw')
+        self.Info_label.pack(side=tk.BOTTOM,anchor='nw')
+
+        #self.OutInfo ='NONE'
+        #self.OutInfo_label = ttk.Label(text=self.OutInfo, font=('Arial', 10),justify="left" )
+        #self.OutInfo_label.pack(anchor='nw')
 
         # Frame for simualation status
         f = ttk.Frame().pack()
@@ -219,7 +200,8 @@ class RecGui(tk.Tk):
             self.rec_button['state'] = 'normal'
 
     def update_gui(self):
-        self.Info = 'Source device:'+sd.query_devices(self.device)['name']+'\tSampleRate:'+str(self.stream.samplerate)+'\tChannel Number.:'+str(self.stream.channels)
+        print(self.device)
+        self.Info = 'Source device:\n'+sd.query_devices(self.device)['name']+'\tSampleRate:'+str(self.stream.samplerate)+'\tChannel Number.:'+str(self.stream.channels)
         self.Info_label['text'] = self.Info
         try:
             peak = self.metering_q.get_nowait()
