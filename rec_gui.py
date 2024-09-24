@@ -27,7 +27,7 @@ import MenuWindow
 
 class RecGui(tk.Tk):
     stream = None
-    sd.default.samplerate = 48000
+    sd.default.samplerate = 44100
     sd.default.blocksize= 1024
 
     def on_settings(self, *args):
@@ -104,13 +104,17 @@ class RecGui(tk.Tk):
 
     def create_stream(self, device=None,):
         if self.stream is not None:
+            self.stream.abort()
+            self.stream.stop()
             self.stream.close()
         chan = 2
         if 'USB' in sd.query_devices(self.device)['name']:
-            chan = min(16,sd.query_devices(device)['max_input_channels'])
+            chan = max(16,sd.query_devices(device)['max_input_channels'])
         else:
             chan = 2
-        chan = 2
+        #chan = 2
+        print(self.device)
+        #print(self.stream.samplerate)
         self.stream = sd.InputStream(
             device=device, channels=chan, callback=self.audio_callback)
         self.stream.start()
