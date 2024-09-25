@@ -27,31 +27,33 @@ import MenuWindow
 
 class RecGui(tk.Tk):
     stream = None
-    sd.default.samplerate = 44100
-    sd.default.blocksize= 1024
-
     def on_settings(self, *args):
-        w = MenuWindow.SettingsWindow(self, 'Settings')
+        w = MenuWindow.SettingsWindow(self, 'Input Settings',1)
         if(w.result!=None):
             self.device =w.result
             self.create_stream(device=w.result)
         self.update_gui()
 
     def output_settings(self, *args):
-        w = MenuWindow.OutSettingsWindow(self, 'Settings')
+        w = MenuWindow.SettingsWindow(self, 'Output Settings',2)
 
         if(w.result!=None):
             self.device =w.result
         self.update_gui()
-        #if w.result is not None:
-        #    self.create_stream(device=w.result)
+
+    def generation_settings(self, *args):
+        w = MenuWindow.Generate(self, 'Generate')
+
+        if(w.result!=None):
+            self.device =w.result
+        self.update_gui()
   
     def __init__(self):
         super().__init__()
         
         self.device=0
         self.instance = AlgoProcess()
-        self.LedOBJ = LED()
+        #self.LedOBJ = LED()
         self.title('SoundSimulation')
         self.geometry('1000x500') 
         
@@ -66,6 +68,10 @@ class RecGui(tk.Tk):
         menubar.add_cascade(label='Output Setting',menu=menu2)
         menu2.add_command(label='Source/Device',command=self.output_settings)
         menu2.add_command(label='Format')
+
+        menu3=Menu(menubar,tearoff=False)
+        menubar.add_cascade(label='Generation',menu=menu3)
+        menu3.add_command(label='Config',command=self.generation_settings)
 
         self.Info ='NONE'
         self.Info_label = ttk.Label(text=self.Info, font=('Arial', 10),justify="left" )
@@ -118,6 +124,7 @@ class RecGui(tk.Tk):
         self.stream = sd.InputStream(
             device=device, channels=chan, callback=self.audio_callback)
         self.stream.start()
+        #sd.stream()
 
     def audio_callback(self, indata, frames, time, status):
         """This is called (from a separate thread) for each audio block."""
@@ -197,7 +204,7 @@ class RecGui(tk.Tk):
             self.meter['value'] = peak
         content = 'DOA(Direction Of Arrival) Angle:'+str(round(self.angle/3.1415926*18)*10)
         self.angle_label['text'] = content
-        self.LedOBJ.LED_Control(int(self.angle/3.1415926*16))
+        #self.LedOBJ.LED_Control(int(self.angle/3.1415926*16))
         self.after(500, self.update_gui)
 
     def close_window(self):
