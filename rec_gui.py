@@ -28,14 +28,14 @@ import MenuWindow
 class RecGui(tk.Tk):
     stream = None
     def on_settings(self, *args):
-        w = MenuWindow.SettingsWindow(self, 'Input Settings')
+        w = MenuWindow.SettingsWindow(self, 'Input Settings',1)
         if(w.result!=None):
             self.device =w.result
             self.create_stream(device=w.result)
         self.update_gui()
 
     def output_settings(self, *args):
-        w = MenuWindow.SettingsWindow(self, 'Output Settings')
+        w = MenuWindow.SettingsWindow(self, 'Output Settings',2)
 
         if(w.result!=None):
             self.device =w.result
@@ -53,7 +53,7 @@ class RecGui(tk.Tk):
         
         self.device=0
         self.instance = AlgoProcess()
-        #self.LedOBJ = LED()
+        self.LedOBJ = LED()
         self.title('SoundSimulation')
         self.geometry('1000x500') 
         
