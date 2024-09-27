@@ -28,12 +28,17 @@ import MenuWindow
 class RecGui(tk.Tk):
     stream = None
     def on_settings(self, *args):
+<<<<<<< HEAD
         w = MenuWindow.SettingsWindow(self, 'Input Settings',1)
+=======
+        w = MenuWindow.SettingsWindow(self, 'Input Settings')
+>>>>>>> 97f5185fd15cf637c530976ed3c89677f5d55787
         if(w.result!=None):
             self.device =w.result
             self.create_stream(device=w.result)
         self.update_gui()
 
+<<<<<<< HEAD
     def output_settings(self, *args):
         w = MenuWindow.SettingsWindow(self, 'Output Settings',2)
 
@@ -41,6 +46,8 @@ class RecGui(tk.Tk):
             self.device =w.result
         self.update_gui()
 
+=======
+>>>>>>> 97f5185fd15cf637c530976ed3c89677f5d55787
     def generation_settings(self, *args):
         w = MenuWindow.Generate(self, 'Generate')
 
@@ -60,14 +67,8 @@ class RecGui(tk.Tk):
         menubar = Menu(self)
         self.config(menu=menubar)        
         menu1=Menu(menubar,tearoff=False)
-        menubar.add_cascade(label='Input Setting',menu=menu1)
+        menubar.add_cascade(label='Device Setting',menu=menu1)
         menu1.add_command(label='Source/Device',command=self.on_settings)
-        menu1.add_command(label='Format')
-
-        menu2=Menu(menubar,tearoff=False)
-        menubar.add_cascade(label='Output Setting',menu=menu2)
-        menu2.add_command(label='Source/Device',command=self.output_settings)
-        menu2.add_command(label='Format')
 
         menu3=Menu(menubar,tearoff=False)
         menubar.add_cascade(label='Generation',menu=menu3)

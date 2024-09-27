@@ -35,55 +35,99 @@ class Generate(Dialog):
 
 class SettingsWindow(Dialog):
     """Dialog window for choosing sound device."""
-    def __init__(self, master, title,type):
-        self.value = type
-        print(type)
-        Dialog.__init__(self, master, title=title)
+    #def __init__(self, master, title):
+    #    Dialog.__init__(self, master, title=title)
 
     def body(self, master):
-        self.Info ='NONE'
-        self.Info_label = ttk.Label(self,text=self.Info, font=('Arial', 10),justify="left" )
-        self.Info_label.pack(side=tk.BOTTOM,anchor='nw')
 
-        ttk.Label(self, text='Select host API:').pack(anchor='w')
-        self.hostapi_list = ttk.Combobox(self, state='readonly', width=50)
-        self.hostapi_list.pack(anchor='w')
-        self.hostapi_list['values'] = [
+        # input device Frame
+        self.FrameInputDevice = Frame(self)
+        self.FrameInputDevice.pack(anchor='w')
+        self.Info ='NONE'
+        ttk.Label(self.FrameInputDevice, text='Device Input:\nSelect host API:').pack(anchor='w')
+        self.input_hostapi_list = ttk.Combobox(self.FrameInputDevice, state='readonly', width=50)
+        self.input_hostapi_list.pack(anchor='w')
+        self.input_hostapi_list['values'] = [
             hostapi['name'] for hostapi in sd.query_hostapis()]
         # select sound device
-        ttk.Label(self, text='Select sound device:').pack(anchor='w')
-        self.device_ids = []
-        self.device_list = ttk.Combobox(self, state='readonly', width=50)
-        self.device_list.pack(anchor='w')
-        self.hostapi_list.bind('<<ComboboxSelected>>', self.update_device_list)
+        ttk.Label(self.FrameInputDevice, text='Select sound device:').pack(anchor='w')
+        self.device_input_ids = []
+        self.device_input_list = ttk.Combobox(self.FrameInputDevice, state='readonly', width=50)
+        self.device_input_list.pack(anchor='w')
+        self.input_hostapi_list.bind('<<ComboboxSelected>>', self.update_device_list)
         with contextlib.suppress(sd.PortAudioError):
-            self.hostapi_list.current(sd.default.hostapi)
-            self.hostapi_list.event_generate('<<ComboboxSelected>>')
-        #print(self.Infolabel)
-        print(self.Info)
+            self.input_hostapi_list.current(sd.default.hostapi)
+            self.input_hostapi_list.event_generate('<<ComboboxSelected>>')
+
+        # output device for configure.
+        self.FrameDeviceOut = Frame(self)
+        self.FrameDeviceOut.pack(anchor='w')
+        ttk.Label(self.FrameDeviceOut, text='Device Output:\nSelect host API:').pack(anchor='w')
+        self.out_hostapi_list = ttk.Combobox(self.FrameDeviceOut, state='readonly', width=50)
+        self.out_hostapi_list.pack(anchor='w')
+        self.out_hostapi_list['values'] = [
+            hostapi['name'] for hostapi in sd.query_hostapis()]
+        # select sound device
+        ttk.Label(self.FrameDeviceOut, text='Select sound device:').pack(anchor='w')
+        self.device_ids = []
+        self.device_list = ttk.Combobox(self.FrameDeviceOut, state='readonly', width=50)
+        self.device_list.pack(anchor='w')
+        self.out_hostapi_list.bind('<<ComboboxSelected>>', self.update_Outdevice_list)
+        with contextlib.suppress(sd.PortAudioError):
+            self.out_hostapi_list.current(sd.default.hostapi)
+            self.out_hostapi_list.event_generate('<<ComboboxSelected>>')
+
+        #self.Info_label1 = tk.Label(self,text='text', font=('Arial', 10),justify="left" ).pack(anchor='w')
+        self.FrameInfo = Frame(self)
+        self.FrameInfo.pack(anchor='w')
+        self.Info_label = ttk.Label(self.FrameInfo,text=self.Info, font=('Arial', 10),justify="left" )
+        self.Info_label.pack(anchor='w')
+        self.update_gui()
+
+    def update_gui(self):
+        
+        str_input = 'Input device:\n' +self.shostapi['name']+ '\t'+sd.query_devices(self.input_dev)['name'] 
+        self.Info = str_input+ '\n'+'OutputDev:'
+        self.Info_label['text'] = self.Info
+        self.after(100, self.update_gui)
+
+        #self.Info_label1['text'] = 'self.Info'
     def update_device_list(self, *args):
-        hostapi = sd.query_hostapis(self.hostapi_list.current())
-        print(hostapi['name'])
-        if self.value ==1:
-            DeviceType = 'max_input_channels'
-            default_device = 'default_input_device'
-        else:
-            DeviceType = 'max_output_channels'
-            default_device = 'default_output_device'
+        self.shostapi = sd.query_hostapis(self.input_hostapi_list.current())
+        print(self.shostapi['name'])
+#
+        DeviceType = 'max_input_channels'
+        default_device = 'default_input_device'
+        self.device_input_ids = [
+            idx
+            for idx in self.shostapi['devices']
+            if sd.query_devices(idx)[DeviceType] > 0]
+        self.device_input_list['values'] = [
+            sd.query_devices(idx)['name'] for idx in self.device_input_ids]
+        default = self.shostapi[default_device]
+        if default >= 0:
+            self.device_input_list.current(self.device_input_ids.index(default))
+        self.input_dev = self.device_input_list.current()
+        print(self.device_input_ids)
+        print(self.input_dev)
+        print(sd.query_devices(self.input_dev)['name'])
+
+    def update_Outdevice_list(self, *args):
+        self.out_hostapi = sd.query_hostapis(self.out_hostapi_list.current())
+        print(self.out_hostapi['name'])
+
+        DeviceType = 'max_output_channels'
+        default_device = 'default_output_device'
         self.device_ids = [
             idx
-            for idx in hostapi['devices']
+            for idx in self.out_hostapi['devices']
             if sd.query_devices(idx)[DeviceType] > 0]
         self.device_list['values'] = [
             sd.query_devices(idx)['name'] for idx in self.device_ids]
-        default = hostapi[default_device]
+        default = self.out_hostapi[default_device]
         if default >= 0:
             self.device_list.current(self.device_ids.index(default))
-        print(self.device_ids)
-        self.Info = str(hostapi['name']) + 'device ID:'+str(self.device_ids[self.device_list.current()])
-        print(self.Info)
-        #print(self.Infolabel)
-        self.Info_label['text'] = self.Info
+        self.output_dev = self.device_list.current()            
 
     def validate(self):
         self.result = self.device_ids[self.device_list.current()]
@@ -93,7 +137,8 @@ class SettingsWindow(Dialog):
 def main():
     root = tk.Tk()
     root.withdraw()
-    app = Generate(root,'Tone Gnerate')
+    #app = Generate(root,'Tone Gnerate')
+    testMenu = SettingsWindow(root,'test')
 
 if __name__ == '__main__':
     main()
