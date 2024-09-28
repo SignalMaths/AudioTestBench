@@ -7,6 +7,8 @@ import numpy as np
 
 import threading
 from FileThread import FileWriting
+from AlgoProcess import AlgoProcess
+from ctypes import c_float 
 import time
 
 class DeviceStream:
@@ -18,11 +20,18 @@ class DeviceStream:
         self.recording =0
         self.audio_q = queue.Queue()
         self.metering_q = queue.Queue(maxsize=1)
+        self.instance = AlgoProcess()
     def audio_callback(self, indata, frames, time, status):
         """This is called (from a separate thread) for each audio block."""
         if self.recording:
             self.audio_q.put(indata.copy())
             self.previously_recording = True
+            c_float_array = indata.astype(np.ctypeslib.as_ctypes_type(c_float))
+            for j in range(self.stream.channels):
+                for i in range(self.stream.blocksize):
+                    self.instance.dataIn[j*self.stream.blocksize + i] = c_float_array[i,j]
+            self.instance.process()
+            self.angle = float(self.instance.dataOut[0])
         else:
             if self.previously_recording:
                 self.audio_q.put(None)
@@ -35,9 +44,8 @@ class DeviceStream:
             pass
         else:
             self.peak = 0
-
-
-    def create_stream(self, device,):
+            
+    def create_stream(self, device,filename):
         if self.stream is not None:
             self.stream.abort()
             self.stream.stop()
@@ -53,7 +61,7 @@ class DeviceStream:
         self.thread = threading.Thread(
             target=FileWriting.file_writing_thread,
             kwargs=dict(
-                file='test.wav',
+                file=filename,
                 mode='x',
                 samplerate=int(self.stream.samplerate),
                 channels=self.stream.channels,
@@ -61,6 +69,7 @@ class DeviceStream:
             ),
         )
         self.thread.start()
+
     def stop_stream(self, *args):
         self.recording = False
         #self.wait_for_thread()
@@ -75,8 +84,9 @@ def main():
     
 
     #root.mainloop()
+    filename ='out.wav'
     test = DeviceStream()
-    test.create_stream(testMenu.input_dev['index'])
+    test.create_stream(testMenu.input_dev['index'],filename)
     print(testMenu.input_dev['index'])
     print(testMenu.output_dev['index'])
     time.sleep(10)
