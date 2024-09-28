@@ -160,7 +160,6 @@ class SettingsWindow(Dialog):
 
     def validate(self):
         self.result = self.device_ids[self.device_list.current()]
-        print(self.device_list.current())
         return True
 
 def main():

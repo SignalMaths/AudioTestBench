@@ -27,25 +27,12 @@ import MenuWindow
 
 class RecGui(tk.Tk):
     stream = None
-    def on_settings(self, *args):
-        w = MenuWindow.SettingsWindow(self, 'Input Settings')
-        if(w.result!=None):
-            print(w.result)
-            #self.device =w.result
-            #self.create_stream(device=w.result)
-
-    def generation_settings(self, *args):
-        w = MenuWindow.Generate(self, 'Generate')
-
-        if(w.result!=None):
-            self.device =w.result
   
     def __init__(self):
         super().__init__()
         
         self.device=0
         self.instance = AlgoProcess()
-        #self.LedOBJ = LED()
         self.title('SoundSimulation')
         self.geometry('1000x500') 
         
@@ -93,6 +80,16 @@ class RecGui(tk.Tk):
         self.protocol('WM_DELETE_WINDOW', self.close_window)
         self.init_buttons()
         self.update_gui()
+
+    def on_settings(self, *args):
+        w = MenuWindow.SettingsWindow(self, 'Input Settings')
+        if(w.result!=None):
+            print(w.result)
+            #self.device =w.result
+            self.create_stream(device=w.result)
+
+    def generation_settings(self, *args):
+        w = MenuWindow.Generate(self, 'Generate')
 
     def create_stream(self, device=None,):
         if self.stream is not None:
