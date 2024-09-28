@@ -22,45 +22,30 @@ from datetime import datetime
 
 from AlgoProcess import AlgoProcess
 from FileThread import FileWriting
-from Led import LED
+#from Led import LED
 import MenuWindow
 
 class RecGui(tk.Tk):
     stream = None
     def on_settings(self, *args):
-<<<<<<< HEAD
-        w = MenuWindow.SettingsWindow(self, 'Input Settings',1)
-=======
         w = MenuWindow.SettingsWindow(self, 'Input Settings')
->>>>>>> 97f5185fd15cf637c530976ed3c89677f5d55787
         if(w.result!=None):
-            self.device =w.result
-            self.create_stream(device=w.result)
-        self.update_gui()
+            print(w.result)
+            #self.device =w.result
+            #self.create_stream(device=w.result)
 
-<<<<<<< HEAD
-    def output_settings(self, *args):
-        w = MenuWindow.SettingsWindow(self, 'Output Settings',2)
-
-        if(w.result!=None):
-            self.device =w.result
-        self.update_gui()
-
-=======
->>>>>>> 97f5185fd15cf637c530976ed3c89677f5d55787
     def generation_settings(self, *args):
         w = MenuWindow.Generate(self, 'Generate')
 
         if(w.result!=None):
             self.device =w.result
-        self.update_gui()
   
     def __init__(self):
         super().__init__()
         
         self.device=0
         self.instance = AlgoProcess()
-        self.LedOBJ = LED()
+        #self.LedOBJ = LED()
         self.title('SoundSimulation')
         self.geometry('1000x500') 
         
