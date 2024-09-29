@@ -24,7 +24,6 @@ class RecGui(tk.Tk):
   
     def __init__(self):
         super().__init__()
-
         self.manageStream = DeviceStream()
         self.title('SoundSimulation')
         self.geometry('1000x500') 
