@@ -42,10 +42,21 @@ class RecGui(tk.Tk):
         self.Info_label = ttk.Label(text=self.Info, font=('Arial', 10),justify="left" )
         self.Info_label.pack(side=tk.BOTTOM,anchor='nw')
 
-        # Frame for simualation status
-        f = ttk.Frame().pack()
-        self.rec_button = ttk.Button(f)
-        self.rec_button.pack(anchor='w')
+        # Frame for simualation choice and status
+        fbutton = ttk.Frame(self)#.pack(anchor='w')
+        fbutton.pack(fill="both", expand=False)
+        self.rec_button = ttk.Button(fbutton)
+        self.rec_button.grid(row=0, column=0, sticky="news")
+        self.play_button = ttk.Button(fbutton,text='Play')
+        self.play_button.grid(row=0, column=1, sticky="news")
+        self.voip_button = ttk.Button(fbutton,text='VOIP')
+        self.voip_button.grid(row=0, column=2, sticky="news")
+        self.kws_button = ttk.Button(fbutton,text='KWS')
+        self.kws_button.grid(row=0, column=3, sticky="news")
+        self.Measurement_button = ttk.Button(fbutton,text='Mesurement')
+        self.Measurement_button.grid(row=0, column=4, sticky="news")
+        self.Car_button = ttk.Button(fbutton,text='Car audio')
+        self.Car_button.grid(row=0, column=4, sticky="news")
 
         self.file_label = ttk.Label(text='<file name>')
         self.file_label.pack(anchor='w')
@@ -87,14 +98,16 @@ class RecGui(tk.Tk):
     def on_stop(self, *args):
         self.rec_button['state'] = 'disabled'
         self.recording = False
+        self.rec_button['text'] = 'Record'
         self.manageStream.stop_stream(self.manageStream.input_device)
+        self.rec_button['state'] = 'normal'
         self.init_buttons()
 
     def init_buttons(self):
-        self.rec_button['text'] = 'Simulation'
+        self.rec_button['text'] = 'Record'
         self.rec_button['command'] = self.on_rec
-        if self.stream:
-            self.rec_button['state'] = 'normal'
+        #if self.stream:
+        #    self.rec_button['state'] = 'normal'
 
     def update_gui(self):
         self.Info_label['text'] = self.manageStream.Info
