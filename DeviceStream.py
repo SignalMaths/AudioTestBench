@@ -7,18 +7,27 @@ import numpy as np
 
 import threading
 from FileThread import FileWriting
+from FileThread import FileReading
 from AlgoProcess import AlgoProcess
 from ctypes import c_float 
 import time
 import sys
 import soundfile as sf
 import argparse
+import argparse
+
+import sounddevice as sd
+import numpy  # Make sure NumPy is loaded before it is used in the callback
+assert numpy  # avoid "imported but unused" message (W0611)
 
 class DeviceStream:
     
     def __init__(self, value=None):
         self.stream = None
         self.play_stream = None
+        self.play_buffersize = 2
+        self.play_blocksize = 512
+
         self.peak =0
         self.input_device = sd.query_hostapis(sd.default.hostapi)['default_input_device']
         self.output_device = sd.query_hostapis(sd.default.hostapi)['default_output_device']
@@ -98,88 +107,55 @@ class DeviceStream:
             raise sd.CallbackAbort from e
         if len(data) < len(outdata):
             outdata[:len(data)] = data
-            outdata[len(data):].fill(0)
+            outdata[len(data):] = b'\x00' * (len(outdata) - len(data))
             raise sd.CallbackStop
         else:
-            outdata[:] = data        
-            
+            outdata[:] = data
+
     def create_play_stream(self, device,filename):
-        event = threading.Event()
-        try:
-            with sf.SoundFile(filename) as f:
-                for _ in range(args.buffersize):
-                    data = f.read(args.blocksize)
-                    if not len(data):
-                        break
-                    self.output_audio_q.put_nowait(data)  # Pre-fill queue
-                    print("pre-fill queue")
-                stream = sd.OutputStream(
-                    samplerate=f.samplerate, blocksize=args.blocksize,
-                    device=args.device, channels=f.channels,
-                    callback=self.output_audio_callback, finished_callback=event.set)
-                with stream:
-                    timeout = args.blocksize * args.buffersize / f.samplerate
-                    while len(data):
-                        data = f.read(args.blocksize)
-                        q.put(data, timeout=timeout)
-                    print("fill queue")
-                    event.wait()  # Wait until playback is finished
-        except KeyboardInterrupt:
-            print('\nInterrupted by user')
-        except queue.Full:
-            # A timeout occurred, i.e. there was an error in the callback
-            print("time out occurred")
-        except Exception as e:
-            print(type(e).__name__ + ': ' + str(e))
-
-
-
         if self.play_stream is not None:
-            self.play_stream.stop()
+            self.play_stream.abort()
             self.play_stream.close()
-        self.output_device = device
-        print('play start>>>>>>')
-        #print(self.stream.samplerate)
-        self.play_stream = sd.OutputStream(
-            device=device, channels=2, callback=self.output_audio_callback)
-        self.playing =True
-
-        self.play_stream.start()
+        f= sf.SoundFile(filename)
+        self.play_stream = sd.RawOutputStream(
+                samplerate=f.samplerate, blocksize=self.play_blocksize,
+                device=device, channels=f.channels, dtype='float32',
+                callback=self.output_audio_callback)
+        
         self.thread = threading.Thread(
-            target=FileWriting.file_writing_thread,
+            target=FileReading.file_read_thread,
             kwargs=dict(
-                file=filename,
-                mode='x',
-                samplerate=int(self.stream.samplerate),
-                channels=self.stream.channels,
-                q=self.input_audio_q,
+                filename=filename,
+                q=self.output_audio_q,
+                play_blocksize = self.play_blocksize,
             ),
         )
         self.thread.start()
+        self.play_stream.start()
     def stop_play_stream(self, *args):
-        print('end')
+        print('play end')
         self.thread.join() 
-        print('end2<<<<<<')
-
-
+        print('play end2')
 
 def main():
     root = tk.Tk()
     #root.withdraw()
     testMenu = MenuWindow.SettingsWindow(root,'test')
-
+    filename = 'E:\Project\PythonAudio\AudioTestBench\hongge2.wav'
     #root.mainloop()
-    filename ='out.wav'
+    recordfilename ='out.wav'
+    print('debug')
     test = DeviceStream()
     print(test.input_device)
     print(test.output_device)
-    test.create_stream(testMenu.input_dev['index'],filename)
+    print(testMenu.output_dev['name'])
+    test.create_stream(testMenu.input_dev['index'],recordfilename)
+    #test.create_stream(testMenu.output_dev['index'],filename)
+    test.create_play_stream(testMenu.output_dev['index'],filename)
     print(testMenu.input_dev['index'])
     print(testMenu.output_dev['index'])
-    time.sleep(10)
-    test.stop_stream(testMenu.input_dev['index'])
+    #test.stop_stream(testMenu.input_dev['index'])
     root.mainloop()
 
-    
 if __name__ == '__main__':
     main()

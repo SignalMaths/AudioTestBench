@@ -86,7 +86,7 @@ class RecGui(tk.Tk):
     def generation_settings(self, *args):
         w = MenuWindow.Generate(self, 'Generate')
 
-    def on_rec(self):
+    def on_recording(self):
         self.recording = True
         filename = 'Sim_'+datetime.now().strftime('%Y_%m_%d_%H_%M_%S')+'.wav'
         self.manageStream.create_stream(self.manageStream.input_device,filename)
@@ -103,9 +103,27 @@ class RecGui(tk.Tk):
         self.rec_button['state'] = 'normal'
         self.init_buttons()
 
+    def on_playing(self):
+        self.recording = True
+        filename = 'Sim_'+datetime.now().strftime('%Y_%m_%d_%H_%M_%S')+'.wav'
+        self.manageStream.create_stream(self.manageStream.input_device,filename)
+        self.rec_button['text'] = 'stop'
+        self.rec_button['command'] = self.on_play_stop
+        self.rec_button['state'] = 'normal'
+        self.file_label['text'] = 'Recording filename:'+filename
+
+    def on_play_stop(self, *args):
+        self.play_button['state'] = 'disabled'
+        self.play = False
+        self.play_button['text'] = 'Play'
+        #self.manageStream.stop_stream(self.manageStream.input_device)
+        self.play_button['state'] = 'normal'
+        self.init_buttons()
+
     def init_buttons(self):
         self.rec_button['text'] = 'Record'
-        self.rec_button['command'] = self.on_rec
+        self.rec_button['command'] = self.on_recording
+        self.play_button['command'] = self.on_playing
         #if self.stream:
         #    self.rec_button['state'] = 'normal'
 
@@ -118,7 +136,9 @@ class RecGui(tk.Tk):
         #else:
         #    self.meter['value'] = peak
         content = 'DOA(Direction Of Arrival) Angle:'+str(round(self.angle/3.1415926*18)*10)
-        self.angle_label['text'] = content
+        if self.recording ==True:
+            self.angle_label['text'] = content
+
         #self.LedOBJ.LED_Control(int(self.angle/3.1415926*16))
         self.after(500, self.update_gui)
 

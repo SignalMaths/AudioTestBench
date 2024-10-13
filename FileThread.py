@@ -18,14 +18,16 @@ class FileWriting:
                 if data is None:
                     break
                 f.write(data)
-class FileRead:
-    def file_read_thread(*,q,**soundfile_args):
-        with sf.SoundFile(**soundfile_args) as f:
+class FileReading:
+    def file_read_thread(*,filename,q,play_blocksize):
+        with sf.SoundFile(filename) as f:
             while True:
-                data = q.get()
-                if data is None:
+                data = f.buffer_read(play_blocksize, dtype='float32')
+                q.put_nowait(data)  # Pre-fill queue
+                if len(data)<play_blocksize:
+                    print('play end')
                     break
-                f.buffer_read(data)
+                # waiting fro the q data time
 
 def audio_generator(duration, fs):
     t = np.arange(0, duration, 1/fs)  # 时间向量
