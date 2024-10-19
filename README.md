@@ -17,3 +17,4 @@ Rsoureces
 
 Usage
 1: python rec_gui.py
+2: choose the usb device

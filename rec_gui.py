@@ -125,10 +125,12 @@ class RecGui(tk.Tk):
         chan = 2
         if 'USB' in sd.query_devices(self.device)['name']:
             chan = min(16,sd.query_devices(device)['max_input_channels'])
+            print(chan)
         else:
             chan = 2
+        print(chan)
         self.stream = sd.InputStream(
-            device=device, channels=chan, callback=self.audio_callback)
+            device=device, channels=chan, callback=self.audio_callback,dtype='int32')
         self.stream.start()
 
     def audio_callback(self, indata, frames, time, status):
@@ -141,7 +143,11 @@ class RecGui(tk.Tk):
                 for i in range(self.stream.blocksize):
                     self.instance.dataIn[j*self.stream.blocksize + i] = c_float_array[i,j]
             self.instance.process()
-            self.angle = float(self.instance.dataOut[0])
+            #print(self.instance.dataOut[0])
+            if(self.instance.dataOut[0] !=-1):
+                self.angle = float(self.instance.dataOut[0])
+            
+            #print(self.angle)
         else:
             if self.previously_recording:
                 self.audio_q.put(None)
@@ -200,7 +206,7 @@ class RecGui(tk.Tk):
             self.rec_button['state'] = 'normal'
 
     def update_gui(self):
-        print(self.device)
+        #print(self.device)
         self.Info = 'Source device:\n'+sd.query_devices(self.device)['name']+'\tSampleRate:'+str(self.stream.samplerate)+'\tChannel Number.:'+str(self.stream.channels)
         self.Info_label['text'] = self.Info
         try:
@@ -209,9 +215,10 @@ class RecGui(tk.Tk):
             pass
         else:
             self.meter['value'] = peak
-        content = 'DOA(Direction Of Arrival) Angle:'+str(round(self.angle/3.1415926*18)*10)
+        #DOA_src_voice/3.1415926*180
+        content = 'DOA(Direction Of Arrival) Angle:'+str(round(self.angle/3.1415926*180))
         self.angle_label['text'] = content
-        self.LedOBJ.LED_Control(int(self.angle/3.1415926*16))
+        self.LedOBJ.LED_Control(int(self.angle/3.1415926*180/11))
 
         self.after(100, self.update_gui)
 
