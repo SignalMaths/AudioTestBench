@@ -40,6 +40,9 @@ class AlgoProcess:
  
     def process(self):
         self.func_process(self.Vc_ptr,byref(self.dataIn),byref(self.dataOut)) 
+    def destory(self):
+        #self.func_process(self.Vc_ptr,byref(self.dataIn),byref(self.dataOut)) 
+        
 
     
 

@@ -19,13 +19,16 @@ class FileWriting:
                     break
                 f.write(data)
 class FileReading:
-    def file_read_thread(*,filename,q,play_blocksize):
+    def file_read_thread(*,filename,q,play_blocksize,event):
         with sf.SoundFile(filename) as f:
             while True:
                 data = f.buffer_read(play_blocksize, dtype='float32')
+                print(f.tell())
                 q.put_nowait(data)  # Pre-fill queue
                 if len(data)<play_blocksize:
-                    print('play end')
+                    print(len(data))
+                    print(play_blocksize)
+                    print('play file read')
                     break
                 # waiting fro the q data time
 

@@ -75,7 +75,8 @@ class RecGui(tk.Tk):
         # work, the user can manually change the device(s)
         self.protocol('WM_DELETE_WINDOW', self.close_window)
         self.init_buttons()
-        #self.update_gui()
+        
+        self.update_gui()
 
     def on_settings(self, *args):
         w = MenuWindow.SettingsWindow(self, 'Settings')
@@ -104,26 +105,29 @@ class RecGui(tk.Tk):
         self.init_buttons()
 
     def on_playing(self):
-        self.recording = True
-        filename = 'Sim_'+datetime.now().strftime('%Y_%m_%d_%H_%M_%S')+'.wav'
-        self.manageStream.create_stream(self.manageStream.input_device,filename)
-        self.rec_button['text'] = 'stop'
-        self.rec_button['command'] = self.on_play_stop
-        self.rec_button['state'] = 'normal'
-        self.file_label['text'] = 'Recording filename:'+filename
+        self.play = True
+        #filename = 'Sim_'+datetime.now().strftime('%Y_%m_%d_%H_%M_%S')+'.wav'
+        filename = 'E:\Project\PythonAudio\hongge2.wav'
+        self.play_button['text'] = 'stop'
+        self.play_button['command'] = self.on_play_stop
+        self.play_button['state'] = 'normal'
+        self.file_label['text'] = 'Playing filename:'+filename
+        self.manageStream.create_play_stream(self.manageStream.output_device,filename)
 
     def on_play_stop(self, *args):
         self.play_button['state'] = 'disabled'
         self.play = False
         self.play_button['text'] = 'Play'
-        #self.manageStream.stop_stream(self.manageStream.input_device)
+        self.manageStream.stop_play_stream(self.manageStream.output_device)
         self.play_button['state'] = 'normal'
         self.init_buttons()
 
     def init_buttons(self):
         self.rec_button['text'] = 'Record'
         self.rec_button['command'] = self.on_recording
+        self.recording = False 
         self.play_button['command'] = self.on_playing
+        self.play = False
         #if self.stream:
         #    self.rec_button['state'] = 'normal'
 
