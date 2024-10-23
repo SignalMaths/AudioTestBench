@@ -37,6 +37,7 @@ class DeviceStream:
         self.output_audio_q = queue.Queue()
         self.metering_q = queue.Queue(maxsize=1)
         self.instance = AlgoProcess()
+        self.event = threading.Event()
     def input_audio_callback(self, indata, frames, time, status):
         """This is called (from a separate thread) for each audio block."""
         if self.recording:
@@ -128,14 +129,18 @@ class DeviceStream:
                 filename=filename,
                 q=self.output_audio_q,
                 play_blocksize = self.play_blocksize,
+                event = self.event
             ),
         )
         self.thread.start()
         self.play_stream.start()
     def stop_play_stream(self, *args):
-        print('play end')
-        self.thread.join() 
-        print('play end2')
+        #self.event.set()
+        self.play_stream.abort()
+        self.play_stream.close()
+        print(self.output_audio_q.__sizeof__())
+        self.thread.join()         
+        print('play stream end')
 
 def main():
     root = tk.Tk()
