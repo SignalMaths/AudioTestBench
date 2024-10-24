@@ -102,7 +102,9 @@ class RecGui(tk.Tk):
         self.rec_button['text'] = 'Record'
         self.manageStream.stop_stream(self.manageStream.input_device)
         self.rec_button['state'] = 'normal'
-        self.init_buttons()
+        self.rec_button['text'] = 'Record'
+        self.rec_button['command'] = self.on_recording
+        self.recording = False 
 
     def on_playing(self):
         self.play = True
@@ -120,12 +122,14 @@ class RecGui(tk.Tk):
         self.play_button['text'] = 'Play'
         self.manageStream.stop_play_stream(self.manageStream.output_device)
         self.play_button['state'] = 'normal'
-        self.init_buttons()
+        self.play_button['command'] = self.on_playing
+        self.play = False
 
     def init_buttons(self):
         self.rec_button['text'] = 'Record'
         self.rec_button['command'] = self.on_recording
         self.recording = False 
+        self.play_button['state'] = 'normal'
         self.play_button['command'] = self.on_playing
         self.play = False
         #if self.stream:

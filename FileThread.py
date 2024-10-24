@@ -3,7 +3,7 @@
 
 import soundfile as sf
 import sounddevice as sd
-
+import time
 import numpy as np
 
 class FileWriting:
@@ -21,14 +21,15 @@ class FileWriting:
 class FileReading:
     def file_read_thread(*,filename,q,play_blocksize,event):
         with sf.SoundFile(filename) as f:
-            while True:
+            while not event.is_set():
                 data = f.buffer_read(play_blocksize, dtype='float32')
-                print(f.tell())
-                q.put_nowait(data)  # Pre-fill queue
+                q.put(data, timeout=0.05)
+                #q.put(data)
+                #time.sleep(0.05)
                 if len(data)<play_blocksize:
-                    print(len(data))
-                    print(play_blocksize)
-                    print('play file read')
+                    #print(len(data))
+                    #print(play_blocksize)
+                    #print('play file read')
                     break
                 # waiting fro the q data time
 

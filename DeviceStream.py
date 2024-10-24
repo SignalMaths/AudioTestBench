@@ -1,6 +1,5 @@
 import MenuWindow
 import tkinter as tk
-from tkinter import ttk
 import sounddevice as sd
 import queue
 import numpy as np
@@ -10,11 +9,8 @@ from FileThread import FileWriting
 from FileThread import FileReading
 from AlgoProcess import AlgoProcess
 from ctypes import c_float 
-import time
 import sys
 import soundfile as sf
-import argparse
-import argparse
 
 import sounddevice as sd
 import numpy  # Make sure NumPy is loaded before it is used in the callback
@@ -25,6 +21,7 @@ class DeviceStream:
     def __init__(self, value=None):
         self.stream = None
         self.play_stream = None
+        self.voip_stream = None
         self.play_buffersize = 2
         self.play_blocksize = 512
 
@@ -69,7 +66,7 @@ class DeviceStream:
             self.stream.stop()
             self.stream.close()
         self.input_device = device
-        print('start>>>>>>')
+        print('Record start>>>>>>')
         #print(self.stream.samplerate)
         self.stream = sd.InputStream(
             device=device, channels=2, callback=self.input_audio_callback)
@@ -90,11 +87,12 @@ class DeviceStream:
     def stop_stream(self, *args):
         self.recording = False
         #self.wait_for_thread()
-        print('end')
+        #print('end')
         self.thread.join() 
-        print('end2<<<<<<')
+        print('recorder stop <<<<<<')
 
     def output_audio_callback(self, outdata, frames, time, status):
+        self.event.set()
         """This is called (from a separate thread) for each audio block."""
         #assert frames == args.blocksize
         if status.output_underflow:
@@ -135,6 +133,45 @@ class DeviceStream:
         self.thread.start()
         self.play_stream.start()
     def stop_play_stream(self, *args):
+        self.event.set()
+        self.play_stream.abort()
+        self.play_stream.close()
+        #print(self.output_audio_q.__sizeof__())
+        self.thread.join()  
+        self.event.clear()       
+        #print('play stream end')
+
+
+
+    def voip_callback(indata, outdata, frames, time, status):
+        """This is called (from a separate thread) for each audio block."""
+        outdata[:] = indata
+        if status.output_underflow:
+            print('Output underflow: increase blocksize?', file=sys.stderr)
+            raise sd.CallbackAbort
+        outdata[:] = indata
+
+    def create_voip_stream(self, input_device,output_device,filename):
+        if self.play_stream is not None:
+            self.play_stream.abort()
+            self.play_stream.close()
+        
+        self.voip_stream = sd.Stream(device=(input_device, output_device),
+                        samplerate=48000, blocksize=1024,
+                        dtype='int16', latency=10,
+                        channels=1, callback=self.voip_callback)
+        self.thread = threading.Thread(
+            target=FileReading.file_read_thread,
+            kwargs=dict(
+                filename=filename,
+                q=self.output_audio_q,
+                play_blocksize = self.play_blocksize,
+                event = self.event
+            ),
+        )
+        self.thread.start()
+        self.play_stream.start()
+    def stop_voip_stream(self, *args):
         #self.event.set()
         self.play_stream.abort()
         self.play_stream.close()
