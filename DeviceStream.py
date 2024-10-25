@@ -66,7 +66,6 @@ class DeviceStream:
             self.stream.stop()
             self.stream.close()
         self.input_device = device
-        print('Record start>>>>>>')
         #print(self.stream.samplerate)
         self.stream = sd.InputStream(
             device=device, channels=2, callback=self.input_audio_callback)
@@ -92,7 +91,7 @@ class DeviceStream:
         print('recorder stop <<<<<<')
 
     def output_audio_callback(self, outdata, frames, time, status):
-        self.event.set()
+        #self.event.set()
         """This is called (from a separate thread) for each audio block."""
         #assert frames == args.blocksize
         if status.output_underflow:
@@ -136,19 +135,20 @@ class DeviceStream:
         self.event.set()
         self.play_stream.abort()
         self.play_stream.close()
-        #print(self.output_audio_q.__sizeof__())
+        print(self.output_audio_q.qsize())
+        self.output_audio_q.empty()
         self.thread.join()  
         self.event.clear()       
-        #print('play stream end')
+        print('play stream end')
 
 
 
-    def voip_callback(indata, outdata, frames, time, status):
+    def voip_callback(self,indata, outdata, frames, time, status):
         """This is called (from a separate thread) for each audio block."""
-        outdata[:] = indata
-        if status.output_underflow:
-            print('Output underflow: increase blocksize?', file=sys.stderr)
-            raise sd.CallbackAbort
+        #outdata[:] = indata
+        if status:
+            print(status)
+            #raise sd.CallbackAbort
         outdata[:] = indata
 
     def create_voip_stream(self, input_device,output_device,filename):
@@ -157,26 +157,26 @@ class DeviceStream:
             self.play_stream.close()
         
         self.voip_stream = sd.Stream(device=(input_device, output_device),
-                        samplerate=48000, blocksize=1024,
-                        dtype='int16', latency=10,
+                        samplerate=48000, blocksize=512,
+                        dtype='int16', latency=0.01,
                         channels=1, callback=self.voip_callback)
-        self.thread = threading.Thread(
-            target=FileReading.file_read_thread,
-            kwargs=dict(
-                filename=filename,
-                q=self.output_audio_q,
-                play_blocksize = self.play_blocksize,
-                event = self.event
-            ),
-        )
-        self.thread.start()
-        self.play_stream.start()
+        #self.thread = threading.Thread(
+        #    target=FileReading.file_read_thread,
+        #    kwargs=dict(
+        #        filename=filename,
+        #        q=self.output_audio_q,
+        #        play_blocksize = self.play_blocksize,
+        #        event = self.event
+        #    ),
+        #)
+        #self.thread.start()
+        self.voip_stream.start()
     def stop_voip_stream(self, *args):
         #self.event.set()
-        self.play_stream.abort()
-        self.play_stream.close()
+        self.voip_stream.abort()
+        self.voip_stream.close()
         print(self.output_audio_q.__sizeof__())
-        self.thread.join()         
+        #self.thread.join()         
         print('play stream end')
 
 def main():
@@ -191,9 +191,13 @@ def main():
     print(test.input_device)
     print(test.output_device)
     print(testMenu.output_dev['name'])
-    test.create_stream(testMenu.input_dev['index'],recordfilename)
+    print(testMenu.input_dev['name'])
+    #print(testMenu.input_dev['index'])
+    #print(testMenu.output_dev['index'])
+    #test.create_stream(testMenu.input_dev['index'],recordfilename)
     #test.create_stream(testMenu.output_dev['index'],filename)
-    test.create_play_stream(testMenu.output_dev['index'],filename)
+    #test.create_play_stream(testMenu.output_dev['index'],filename)
+    test.create_voip_stream(test.input_device,test.output_device,filename='ss.wav')
     print(testMenu.input_dev['index'])
     print(testMenu.output_dev['index'])
     #test.stop_stream(testMenu.input_dev['index'])

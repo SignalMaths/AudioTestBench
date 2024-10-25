@@ -45,18 +45,16 @@ class RecGui(tk.Tk):
         # Frame for simualation choice and status
         fbutton = ttk.Frame(self)#.pack(anchor='w')
         fbutton.pack(fill="both", expand=False)
-        self.rec_button = ttk.Button(fbutton)
-        self.rec_button.grid(row=0, column=0, sticky="news")
-        self.play_button = ttk.Button(fbutton,text='Play')
-        self.play_button.grid(row=0, column=1, sticky="news")
-        self.voip_button = ttk.Button(fbutton,text='VOIP')
-        self.voip_button.grid(row=0, column=2, sticky="news")
-        self.kws_button = ttk.Button(fbutton,text='KWS')
-        self.kws_button.grid(row=0, column=3, sticky="news")
-        self.Measurement_button = ttk.Button(fbutton,text='Mesurement')
-        self.Measurement_button.grid(row=0, column=4, sticky="news")
-        self.Car_button = ttk.Button(fbutton,text='Car audio')
-        self.Car_button.grid(row=0, column=4, sticky="news")
+        self.button_text=['Record','Play','VOIP','LounderSpeaker/HearingAid','CarAudio','KWS','ASR','TTS','Meansurement']
+        self.buttons=[]
+        for i in range(5):
+            _button = ttk.Button(fbutton,text=self.button_text[i])
+            _button.grid(row=0, column=i, sticky="news")
+            self.buttons.append(_button)
+        self.buttons[0]['command']=lambda: self.on_simulation(self,0)
+        self.buttons[1]['command']=lambda: self.on_simulation(self,1)
+        self.buttons[2]['command']=lambda: self.on_simulation(self,2)
+        self.buttons[3]['command']=lambda: self.on_simulation(self,3)
 
         self.file_label = ttk.Label(text='<file name>')
         self.file_label.pack(anchor='w')
@@ -74,10 +72,10 @@ class RecGui(tk.Tk):
         # We try to open a stream with default settings first, if that doesn't
         # work, the user can manually change the device(s)
         self.protocol('WM_DELETE_WINDOW', self.close_window)
-        self.init_buttons()
-        
+        self.recording = False 
+        self.play = False
         self.update_gui()
-
+        
     def on_settings(self, *args):
         w = MenuWindow.SettingsWindow(self, 'Settings')
         self.manageStream.input_device = w.input_dev_id
@@ -87,54 +85,41 @@ class RecGui(tk.Tk):
     def generation_settings(self, *args):
         w = MenuWindow.Generate(self, 'Generate')
 
-    def on_recording(self):
-        self.recording = True
-        filename = 'Sim_'+datetime.now().strftime('%Y_%m_%d_%H_%M_%S')+'.wav'
-        self.manageStream.create_stream(self.manageStream.input_device,filename)
-        self.rec_button['text'] = 'stop'
-        self.rec_button['command'] = self.on_stop
-        self.rec_button['state'] = 'normal'
-        self.file_label['text'] = 'Recording filename:'+filename
+    def on_simulation(self,*args):
+        ID =args[1]
+        self.buttons[ID]['text']='stop'
+        self.buttons[ID]['command']=lambda: self.on_stop(self,ID)
+        self.buttons[ID]['state'] = 'normal'
+        if ID==0:  # start recording
+            self.recording = True
+            filename = 'Sim_'+datetime.now().strftime('%Y_%m_%d_%H_%M_%S')+'.wav'
+            self.manageStream.create_stream(self.manageStream.input_device,filename)
+            self.file_label['text'] = 'Recording filename:'+filename
+        if ID==1: # start playing
+            #filename = 'Sim_'+datetime.now().strftime('%Y_%m_%d_%H_%M_%S')+'.wav'q
+            filename = 'E:\Project\PythonAudio\hongge2.wav'
+            self.file_label['text'] = 'Playing filename:'+filename
+            self.manageStream.create_play_stream(self.manageStream.output_device,filename)
+        if ID==2:
+            #filename = 'Sim_'+datetime.now().strftime('%Y_%m_%d_%H_%M_%S')+'.wav'q
+            filename = 'E:\Project\PythonAudio\hongge2.wav'
+            self.file_label['text'] = 'Playing filename:'+filename
+            self.manageStream.create_voip_stream(self.manageStream.input_device,self.manageStream.output_device,filename)
 
     def on_stop(self, *args):
-        self.rec_button['state'] = 'disabled'
-        self.recording = False
-        self.rec_button['text'] = 'Record'
-        self.manageStream.stop_stream(self.manageStream.input_device)
-        self.rec_button['state'] = 'normal'
-        self.rec_button['text'] = 'Record'
-        self.rec_button['command'] = self.on_recording
-        self.recording = False 
-
-    def on_playing(self):
-        self.play = True
-        #filename = 'Sim_'+datetime.now().strftime('%Y_%m_%d_%H_%M_%S')+'.wav'
-        filename = 'E:\Project\PythonAudio\hongge2.wav'
-        self.play_button['text'] = 'stop'
-        self.play_button['command'] = self.on_play_stop
-        self.play_button['state'] = 'normal'
-        self.file_label['text'] = 'Playing filename:'+filename
-        self.manageStream.create_play_stream(self.manageStream.output_device,filename)
-
-    def on_play_stop(self, *args):
-        self.play_button['state'] = 'disabled'
-        self.play = False
-        self.play_button['text'] = 'Play'
-        self.manageStream.stop_play_stream(self.manageStream.output_device)
-        self.play_button['state'] = 'normal'
-        self.play_button['command'] = self.on_playing
-        self.play = False
-
-    def init_buttons(self):
-        self.rec_button['text'] = 'Record'
-        self.rec_button['command'] = self.on_recording
-        self.recording = False 
-        self.play_button['state'] = 'normal'
-        self.play_button['command'] = self.on_playing
-        self.play = False
-        #if self.stream:
-        #    self.rec_button['state'] = 'normal'
-
+        ID =args[1]
+        self.buttons[ID]['text']=self.button_text[ID]
+        self.buttons[ID]['command']=lambda: self.on_simulation(self,ID)
+        self.buttons[ID]['state'] = 'normal'        
+        if ID==0:
+            self.manageStream.stop_stream(self.manageStream.input_device)
+            self.recording = False 
+        if ID==1:
+            self.manageStream.stop_play_stream(self.manageStream.output_device)
+            self.play = False
+        if ID==2:
+            self.manageStream.stop_voip_stream(self.manageStream.output_device)
+            self.play = False
     def update_gui(self):
         self.Info_label['text'] = self.manageStream.Info
         #try:
