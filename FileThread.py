@@ -23,15 +23,19 @@ class FileReading:
         with sf.SoundFile(filename) as f:
             while not event.is_set():
                 data = f.buffer_read(play_blocksize, dtype='float32')
-                q.put(data, timeout=0.05)
+                print(q.qsize())
+                q.put_nowait(data) 
+                print(q.qsize())
+                print('==========')
+                print(f.tell())
                 #q.put(data)
-                #time.sleep(0.05)
+                #time.sleep(0.01)
                 if len(data)<play_blocksize:
                     #print(len(data))
                     #print(play_blocksize)
                     #print('play file read')
                     break
-                # waiting fro the q data time
+            print('file read end') #waiting fro the q data time
 
 def audio_generator(duration, fs):
     t = np.arange(0, duration, 1/fs)  # 时间向量

@@ -24,6 +24,7 @@ class DeviceStream:
         self.voip_stream = None
         self.play_buffersize = 2
         self.play_blocksize = 512
+        self.record_blocksize = 1024
 
         self.peak =0
         self.input_device = sd.query_hostapis(sd.default.hostapi)['default_input_device']
@@ -45,13 +46,14 @@ class DeviceStream:
                 for i in range(self.stream.blocksize):
                     self.instance.dataIn[j*self.stream.blocksize + i] = c_float_array[i,j]
             self.instance.process()
-            self.angle = float(self.instance.dataOut[0])
+            if(self.instance.dataOut[0] !=-1):
+                self.angle = float(self.instance.dataOut[0])
         else:
             if self.previously_recording:
                 self.input_audio_q.put(None)
                 self.previously_recording = False
 
-        self.peak = max(self.peak, np.max(np.abs(indata)))
+        self.peak = np.max(np.abs(indata))
         try:
             self.metering_q.put_nowait(self.peak)
         except queue.Full:
@@ -66,13 +68,16 @@ class DeviceStream:
             self.stream.stop()
             self.stream.close()
         self.input_device = device
-        print('Record start>>>>>>')
         #print(self.stream.samplerate)
+        chan = min(16,sd.query_devices(device)['max_input_channels'])
+        sd.default.samplerate = 48000
+        sd.default.blocksize= 1024    
+        
         self.stream = sd.InputStream(
-            device=device, channels=2, callback=self.input_audio_callback)
+            device=device, channels=chan, callback=self.input_audio_callback,dtype='int32')
         self.recording =True
 
-        self.stream.start()
+        
         self.thread = threading.Thread(
             target=FileWriting.file_writing_thread,
             kwargs=dict(
@@ -84,15 +89,18 @@ class DeviceStream:
             ),
         )
         self.thread.start()
+        self.stream.start()
     def stop_stream(self, *args):
         self.recording = False
         #self.wait_for_thread()
         #print('end')
-        self.thread.join() 
+        #self.thread.join() 
+        self.stream.abort()
+        self.stream.close()
         print('recorder stop <<<<<<')
 
     def output_audio_callback(self, outdata, frames, time, status):
-        self.event.set()
+        #self.event.set()
         """This is called (from a separate thread) for each audio block."""
         #assert frames == args.blocksize
         if status.output_underflow:
@@ -136,19 +144,20 @@ class DeviceStream:
         self.event.set()
         self.play_stream.abort()
         self.play_stream.close()
-        #print(self.output_audio_q.__sizeof__())
+        print(self.output_audio_q.qsize())
+        self.output_audio_q.empty()
         self.thread.join()  
         self.event.clear()       
-        #print('play stream end')
+        print('play stream end')
 
 
 
-    def voip_callback(indata, outdata, frames, time, status):
+    def voip_callback(self,indata, outdata, frames, time, status):
         """This is called (from a separate thread) for each audio block."""
-        outdata[:] = indata
-        if status.output_underflow:
-            print('Output underflow: increase blocksize?', file=sys.stderr)
-            raise sd.CallbackAbort
+        #outdata[:] = indata
+        if status:
+            print(status)
+            #raise sd.CallbackAbort
         outdata[:] = indata
 
     def create_voip_stream(self, input_device,output_device,filename):
@@ -157,26 +166,26 @@ class DeviceStream:
             self.play_stream.close()
         
         self.voip_stream = sd.Stream(device=(input_device, output_device),
-                        samplerate=48000, blocksize=1024,
-                        dtype='int16', latency=10,
+                        samplerate=48000, blocksize=512,
+                        dtype='int16', latency=0.01,
                         channels=1, callback=self.voip_callback)
-        self.thread = threading.Thread(
-            target=FileReading.file_read_thread,
-            kwargs=dict(
-                filename=filename,
-                q=self.output_audio_q,
-                play_blocksize = self.play_blocksize,
-                event = self.event
-            ),
-        )
-        self.thread.start()
-        self.play_stream.start()
+        #self.thread = threading.Thread(
+        #    target=FileReading.file_read_thread,
+        #    kwargs=dict(
+        #        filename=filename,
+        #        q=self.output_audio_q,
+        #        play_blocksize = self.play_blocksize,
+        #        event = self.event
+        #    ),
+        #)
+        #self.thread.start()
+        self.voip_stream.start()
     def stop_voip_stream(self, *args):
         #self.event.set()
-        self.play_stream.abort()
-        self.play_stream.close()
+        self.voip_stream.abort()
+        self.voip_stream.close()
         print(self.output_audio_q.__sizeof__())
-        self.thread.join()         
+        #self.thread.join()         
         print('play stream end')
 
 def main():
@@ -191,12 +200,16 @@ def main():
     print(test.input_device)
     print(test.output_device)
     print(testMenu.output_dev['name'])
+    print(testMenu.input_dev['name'])
+    #print(testMenu.input_dev['index'])
+    #print(testMenu.output_dev['index'])
     test.create_stream(testMenu.input_dev['index'],recordfilename)
     #test.create_stream(testMenu.output_dev['index'],filename)
-    test.create_play_stream(testMenu.output_dev['index'],filename)
+    #test.create_play_stream(testMenu.output_dev['index'],filename)
+    #test.create_voip_stream(test.input_device,test.output_device,filename='ss.wav')
     print(testMenu.input_dev['index'])
     print(testMenu.output_dev['index'])
-    #test.stop_stream(testMenu.input_dev['index'])
+    test.stop_stream(testMenu.input_dev['index'])
     root.mainloop()
 
 if __name__ == '__main__':
