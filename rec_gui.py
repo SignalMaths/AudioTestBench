@@ -214,7 +214,7 @@ class RecGui(tk.Tk):
         except queue.Empty:
             pass
         else:
-            self.meter['value'] = peak
+            self.meter['value'] = peak/2147483648
         #DOA_src_voice/3.1415926*180
         content = 'DOA(Direction Of Arrival) Angle:'+str(round(self.angle/3.1415926*180))
         self.angle_label['text'] = content
