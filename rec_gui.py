@@ -64,7 +64,7 @@ class RecGui(tk.Tk):
         
         self.device=0
         self.instance = AlgoProcess()
-        self.LedOBJ = LED()
+
         self.title('SoundSimulation')
         self.geometry('1000x500') 
         
@@ -108,7 +108,11 @@ class RecGui(tk.Tk):
 
         # We try to open a stream with default settings first, if that doesn't
         # work, the user can manually change the device(s)
+        self.usb_flag=0
         self.create_stream()
+        if self.usb_flag ==1:
+            self.LedOBJ = LED()
+            self.ledinit = 1
         self.recording = self.previously_recording = False
         self.audio_q = queue.Queue()
         self.audio_temp = queue.Queue()
@@ -119,6 +123,7 @@ class RecGui(tk.Tk):
         self.init_buttons()
         self.update_gui()
 
+
     def create_stream(self, device=None,):
         if self.stream is not None:
             self.stream.close()
@@ -126,8 +131,13 @@ class RecGui(tk.Tk):
         if 'USB' in sd.query_devices(self.device)['name']:
             chan = min(16,sd.query_devices(device)['max_input_channels'])
             print(chan)
+            self.usb_flag=1
         else:
-            chan = 2
+            chan = 1
+            self.usb_flag=0
+        if self.usb_flag ==1:
+            self.LedOBJ = LED()
+            self.ledinit = 1
         print(chan)
         self.stream = sd.InputStream(
             device=device, channels=chan, callback=self.audio_callback,dtype='int32')
@@ -207,6 +217,9 @@ class RecGui(tk.Tk):
 
     def update_gui(self):
         #print(self.device)
+        if (self.usb_flag ==1) and (self.ledinit==0):
+            self.LedOBJ = LED()
+            self.ledinit==1
         self.Info = 'Source device:\n'+sd.query_devices(self.device)['name']+'\tSampleRate:'+str(self.stream.samplerate)+'\tChannel Number.:'+str(self.stream.channels)
         self.Info_label['text'] = self.Info
         try:
@@ -214,11 +227,12 @@ class RecGui(tk.Tk):
         except queue.Empty:
             pass
         else:
-            self.meter['value'] = peak
+            self.meter['value'] = peak/2147483648
         #DOA_src_voice/3.1415926*180
         content = 'DOA(Direction Of Arrival) Angle:'+str(round(self.angle/3.1415926*180))
         self.angle_label['text'] = content
-        self.LedOBJ.LED_Control(int(self.angle/3.1415926*180/11))
+        if self.usb_flag ==1:
+            self.LedOBJ.LED_Control(int(self.angle/3.1415926*180/11))
 
         self.after(100, self.update_gui)
 
