@@ -36,11 +36,11 @@ class LED:
                             [0x09, 0xEB, 0x90, 0x0A, 0x40, 0x00, 0x00,0x00, 0x4A],
                             [0x09, 0xEB, 0x90, 0x0A, 0x80, 0x00, 0x00,0x00, 0x8A]
                             ]
+        self.dev = hid.device()
+    def LED_Control(self,row):
         VID = 0x152a
         PID = 0x88D3
-        self.dev = hid.device()
         self.dev.open(VID,PID)
-    def LED_Control(self,row):
         if(row <0):
             row =0
         if(row > 31):

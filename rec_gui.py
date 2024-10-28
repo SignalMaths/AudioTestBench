@@ -125,7 +125,7 @@ class RecGui(tk.Tk):
         chan = 2
         if 'USB' in sd.query_devices(self.device)['name']:
             chan = min(16,sd.query_devices(device)['max_input_channels'])
-            print(chan)
+            #print(chan)
         else:
             chan = 2
         print(chan)
@@ -218,7 +218,8 @@ class RecGui(tk.Tk):
         #DOA_src_voice/3.1415926*180
         content = 'DOA(Direction Of Arrival) Angle:'+str(round(self.angle/3.1415926*180))
         self.angle_label['text'] = content
-        self.LedOBJ.LED_Control(int(self.angle/3.1415926*180/11))
+        if 'USB' in sd.query_devices(self.device)['name']:
+            self.LedOBJ.LED_Control(int(self.angle/3.1415926*180/11))
 
         self.after(100, self.update_gui)
 
