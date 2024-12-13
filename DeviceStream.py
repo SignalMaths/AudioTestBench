@@ -36,6 +36,7 @@ class DeviceStream:
         self.metering_q = queue.Queue(maxsize=1)
         self.instance = AlgoProcess()
         self.event = threading.Event()
+        self.angle=0
     def input_audio_callback(self, indata, frames, time, status):
         """This is called (from a separate thread) for each audio block."""
         if self.recording:
@@ -94,7 +95,7 @@ class DeviceStream:
         self.recording = False
         #self.wait_for_thread()
         #print('end')
-        #self.thread.join() 
+        self.thread.join() 
         self.stream.abort()
         self.stream.close()
         print('recorder stop <<<<<<')

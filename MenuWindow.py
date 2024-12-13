@@ -8,6 +8,18 @@ import sounddevice as sd
 from tkinter import filedialog
 from FileThread import FileWriting
 
+
+class HELP(Dialog):
+
+    def body(self, master):
+        ttk.Label(self, text='  Please contact:\n  yahoochemical@126.com').pack(anchor='w')
+
+    def validate(self):
+        # Generate the signal tone
+        #self.result = self.device_ids[self.device_list.current()]
+        return True
+
+
 class Generate(Dialog):
     def save_file(self,):
         # 弹出保存文件对话框

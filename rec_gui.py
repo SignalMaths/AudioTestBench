@@ -39,6 +39,11 @@ class RecGui(tk.Tk):
         menubar.add_cascade(label='Generation',menu=menu3)
         menu3.add_command(label='Config',command=self.generation_settings)
 
+        menu2=Menu(menubar,tearoff=False)
+        menubar.add_cascade(label='HELP',menu=menu2)
+        menu2.add_command(label='HELP',command=self.generation_Help)
+
+
         self.Info ='NONE'
         self.Info_label = ttk.Label(text=self.Info, font=('Arial', 10),justify="left" )
         self.Info_label.pack(side=tk.BOTTOM,anchor='nw')
@@ -89,6 +94,9 @@ class RecGui(tk.Tk):
     def generation_settings(self, *args):
         w = MenuWindow.Generate(self, 'Generate')
 
+    def generation_Help(self, *args):
+        w = MenuWindow.HELP(self, 'Generate')
+
     def on_simulation(self,*args):
         ID =args[1]
         self.buttons[ID]['text']='stop'
@@ -132,7 +140,7 @@ class RecGui(tk.Tk):
         if self.recording ==True:
             self.angle_label['text'] = content
         if 'USB' in self.manageStream.Info:
-            self.LedOBJ.LED_Control(int(self.angle/3.1415926*180/11))
+            self.LedOBJ.LED_Control(int(self.manageStream.angle/3.1415926*180/11))
         self.after(200, self.update_gui)
 
     def close_window(self):
