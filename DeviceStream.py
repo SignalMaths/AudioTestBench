@@ -149,6 +149,11 @@ class DeviceStream:
         if status:
             print(status)
             #raise sd.CallbackAbort
+        # Voice call processing.
+        # save the indata
+        # TX processing
+        # play the outdata
+        # RX processing
         outdata[:] = indata
 
     def create_voip_stream(self, input_device,output_device,filename):
@@ -158,7 +163,7 @@ class DeviceStream:
         
         self.voip_stream = sd.Stream(device=(input_device, output_device),
                         samplerate=48000, blocksize=512,
-                        dtype='int16', latency=0.01,
+                        dtype='int16', latency=0.015,
                         channels=1, callback=self.voip_callback)
         #self.thread = threading.Thread(
         #    target=FileReading.file_read_thread,

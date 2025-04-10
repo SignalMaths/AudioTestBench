@@ -14,6 +14,7 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import *
 from datetime import datetime
+from ParameterFrame import ParameterFrame
 
 from DeviceStream import DeviceStream
 #from Led import LED
@@ -69,6 +70,12 @@ class RecGui(tk.Tk):
         self.meter['maximum'] = 1.0
         self.meter.pack(fill='x')
 
+        # 添加参数调整 Frame（封装后的版本）
+        self.param_frame = ParameterFrame(
+            parent=self,
+            stream_manager=self.manageStream
+        )
+        self.param_frame.pack(fill="x", padx=5, pady=5)
         # We try to open a stream with default settings first, if that doesn't
         # work, the user can manually change the device(s)
         self.protocol('WM_DELETE_WINDOW', self.close_window)
@@ -105,6 +112,8 @@ class RecGui(tk.Tk):
             filename = 'E:\Project\PythonAudio\hongge2.wav'
             self.file_label['text'] = 'Playing filename:'+filename
             self.manageStream.create_voip_stream(self.manageStream.input_device,self.manageStream.output_device,filename)
+        if ID==3:
+            self.manageStream.create_voip_stream(self.manageStream.input_device,self.manageStream.output_device,filename)
 
     def on_stop(self, *args):
         ID =args[1]
@@ -120,6 +129,10 @@ class RecGui(tk.Tk):
         if ID==2:
             self.manageStream.stop_voip_stream(self.manageStream.output_device)
             self.play = False
+        if ID==3:
+            self.manageStream.stop_voip_stream(self.manageStream.output_device)
+            self.play = False
+
     def update_gui(self):
         self.Info_label['text'] = self.manageStream.Info
         #try:
