@@ -21,3 +21,4 @@ Rsoureces
 
 Usage
 1: python rec_gui.py
+2: test for the debug
